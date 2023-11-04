@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.w3.org/1999/xhtml"
+      layout:decorate="~{layouts/layout_common}">
+
+<th:block layout:fragment="script">
+  <script th:inline="javascript">
+    let pageNum = [[${pageNum}]];
+    function refreshReplyCard(html) {
+      let replyCard = $('#repCard');
+      replyCard.children().remove();
+      replyCard.append(html);
+    }
+
+    function refreshDetailCard(html) {
+      let boardCard = $('#boardCard');
+      boardCard.children().remove();
+      boardCard.append(html);
+    }
+
+    function updateInit() {
+      $('.form-control').attr('disabled', false);
+      $('#updateBtn').css('display', 'none');
+      $('#saveBtn').css('display', 'block');
+    }
+
+    function closeDupForm(obj) {
+      $(obj).css('display','none');
+      $(obj).prev().css('display','block');
+      $('#dupForm').remove();
+    }
+
+    function showModal(obj) {
+      let id = obj.dataset.id;
+      let content = $(obj).closest('.comment').children().last().text();
+      $('#rid').val(id);
+      $('#modalContent').val(content);
+      $('div.modal').modal();
+    }
+
+    function cancelDupReply(obj) {
+      let content = $('#dupReply').text();
+      $(obj).closest('.comment').children().last().remove();
+      $(obj).closest('.comment').append("<p>"+content+"</p>");
+      $(obj).css('display','none');
+      $(obj).prev().css('display','inline');
+    }
+
+    function deleteBoard(obj) {
+      let id = obj.dataset.id;
+      let url = "/board/delete/" + id;
+      $.ajax({
+        url: url,
+        type: "DELETE",
+        cache: false,
+        success: function(data) {
+          location.replace("/board/info");
+        }
+      })
+    }
+    function saveBoard(obj) {
+      let id = obj.dataset.id;
+      let url = "/board/update";
+      let boardDto = {
+        id:id,
+        title:$('#title').val(),
+        content:$('#content').val(),
+      };
+      $.ajax({
+        url: url,
+        type: "PATCH",
+        data: JSON.stringify(boardDto),
+        dataType: "html",
+        contentType: "application/json;charset='UTF-8'",
+        cache: false,
+        success: function(data) {
+          $('#updateBtn').css('display', 'block');
+          $('#saveBtn').css('display', 'none');
+          refreshDetailCard(data);
+        }
+      })
+    }
+
+    function deleteReply(obj) {
+      let id = obj.dataset.id;
+      let url = "/reply/delete/" + id;
+      $.ajax({
+        url: url,
+        type: 'DELETE',
+        dataType: 'html',
+        success: function (data) {
+          refreshReplyCard(data)
+        },
+      })
+    }
+
+    function updateReply() {
+      let id = $('#rid').val();
+      let url = "/reply/update/" + id;
+      let data = $('#modalContent').val();
+      $.ajax({
+        url: url,
+        type: 'PATCH',
+        data: data,
+        dataType: 'html',
+        contentType: 'application/text',
+        success: function (data) {
+          $('div.modal').modal('hide');
+          refreshReplyCard(data);
+        }
+      })
+    }
+
+    function showDupForm(obj) {
+      let id = obj.dataset.id;
+      $('.dupCBtn').css('display','none');
+      $('.dupSBtn').css('display','inline');
+      $(obj).css('display','none');
+      $(obj).next().css('display','inline');
+      $('#dupForm').remove();
+      let dupForm = "<form action=\"/dupReply/new\" method=\"post\" id=\"dupForm\">\n" +
+              "       <div class=\"form-group\">\n" +
+              "        <div class=\"input-group\">\n" +
+              "         <input type=\"hidden\" name=\"replyId\" id=\"replyId\">\n" +
+              "         <input type=\"hidden\" name=\"page\" class=\"pageNum\">\n" +
+              "         <textarea class=\"form-control\" id=\"dupReply\" name=\"dupReply\" rows=\"2\"></textarea>\n" +
+              "         <button class=\"btn btn-primary btn-lg\" type=\"submit\">작성</button>\n" +
+              "        </div>\n" +
+              "       </div>\n" +
+              "      </form>";
+      $(obj).closest('.list-group').append(dupForm);
+      $('.pageNum').val(pageNum);
+      $('#replyId').val(id);
+    }
+
+    function deleteDupReply(obj) {
+      let id = obj.dataset.id;
+      let url = '/dupReply/delete/' + id;
+      $.ajax({
+        url: url,
+        type: 'DELETE',
+        dataType: 'html',
+        success: function(data) {
+          refreshReplyCard(data);
+        }
+      })
+    }
+    function updateDupReply(obj) {
+      let id = obj.dataset.id;
+      let dupUpdateForm = $('#dupUpdateForm');
+      let prevContent = $('#dupReply').val();
+      dupUpdateForm.parent().append('<p>'+prevContent+'</p>');
+      dupUpdateForm.remove();
+      $('.dupUCBtn').css('display','none');
+      $('.dupUSBtn').css('display','inline');
+      let updateForm = "<form action=\"/dupReply/update\" method=\"post\" id=\"dupUpdateForm\">\n" +
+              "       <div class=\"form-group\">\n" +
+              "        <div class=\"input-group\">\n" +
+              "         <input type=\"hidden\" name=\"dupReplyId\" id=\"dupReplyId\">\n" +
+              "         <input type=\"hidden\" name=\"page\" class=\"pageNum\">\n" +
+              "         <textarea class=\"form-control\" id=\"dupReply\" name=\"dupReply\" rows=\"2\"></textarea>\n" +
+              "         <button class=\"btn btn-primary btn-lg\" type=\"submit\">작성</button>\n" +
+              "        </div>\n" +
+              "       </div>\n" +
+              "      </form>";
+      let content = $(obj).closest('.comment').children().last().text();
+      $(obj).closest('.comment').children().last().remove();
+      $(obj).closest('.comment').append(updateForm);
+      $('.pageNum').val(pageNum);
+      $('#dupReplyId').val(id);
+      $('#dupReply').text(content);
+      $(obj).css('display','none');
+      $(obj).next().css('display','inline');
+    }
+
+  </script>
+</th:block>
+
+<th:block layout:fragment="css">
+  <style th:inline="css">
+  </style>
+</th:block>
+
+<th:block layout:fragment="content">
+  <div class="content-wrapper">
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>상세 보기</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="/">Home</a></li>
+              <li class="breadcrumb-item"><a href="/board/info">게시판 목록</a></li>
+              <li class="breadcrumb-item active">상세 보기</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="content">
+      <div class="card card-default">
+        <div class="card-header">
+          <h4 class="card-title">상세 내용</h4>
+          <div class="btn-group float-right" th:if="${#strings.equals(boardDto.memberEmail, userEmail)}">
+            <button type="button" id="updateBtn" class="btn btn-primary btn-sm" onclick="updateInit()">수정</button>
+            <button type="button" id="saveBtn" th:data-id="${boardDto.id}" class="btn btn-primary btn-sm" style="display: none;" onclick="saveBoard(this)">저장</button>
+            <button type="button" th:data-id="${boardDto.id}" class="btn btn-primary btn-sm" onclick="deleteBoard(this)">삭제</button>
+          </div>
+          <a type="button" class="btn btn-primary btn-sm float-right mr-1" th:href="@{/board/info(page=${pageNum})}">목록</a>
+        </div>
+        <div class="card-body" id="boardCard">
+          <div class="container-fluid">
+            <div class="form-group">
+              <label>제목</label>
+              <input type="text" id="title" th:value="${boardDto.title}" class="form-control boardForm" disabled>
+            </div>
+            <div class="form-group">
+              <label>내용</label>
+              <textarea class="form-control boardForm" id="content" th:text="${boardDto.content}" rows="10" disabled></textarea>
+            </div>
+            <strong class="mr-2" style="display: inline">최근 수정일</strong>
+            <p style="display: inline; color: gray;" th:text="${boardDto.updateTime}"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="content">
+      <div class="card card-default">
+        <div class="card-header">
+          <h4 class="card-title">댓글</h4>
+        </div>
+        <div class="card-body">
+          <div class="container-fluid">
+            <form action="/reply/new" method="post">
+              <div class="form-group">
+                <div class="input-group">
+                  <input type="hidden" th:value="${boardDto.id}" name="boardId">
+                  <input type="hidden" th:value="${pageNum}" name="page">
+                  <textarea class="form-control" name="reply" id="reply" rows="2"></textarea>
+                  <button class="btn btn-primary btn-lg" type="submit">작성</button>
+                </div>
+              </div>
+              <hr />
+            </form>
+            <div id="repCard">
+              <div class="list-group ml-2 mr-2" th:each="reply : ${replies}">
+                <div>
+                  <div class="row border-bottom mb-2">
+                    <div class="col">
+                      <div class="comment">
+                        <div class="d-flex flex-low align-items-center">
+                          <strong th:text="${reply.writer}"></strong>
+                          <p class="small m-0 ml-2" style="color: gray" th:text="${reply.updateTime}"></p>
+                          <div th:if="${#strings.equals(userEmail, reply.memberEmail)}">
+                            <a class="ml-2" th:data-id="${reply.id}" onclick="deleteReply(this)">삭제</a>
+                            <a class="ml-1" th:data-id="${reply.id}" onclick="showModal(this)">수정</a>
+                          </div>
+                          <a class="ml-2 dupSBtn" th:data-id="${reply.id}" onclick="showDupForm(this)">답글</a>
+                          <a class="ml-2 dupCBtn" style="display:none; color: red;" onclick="closeDupForm(this)">취소</a>
+                        </div>
+                        <p th:text="${reply.content}"></p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row mb-2 border-bottom" style="margin-left: 40px;" th:each="dupReply : ${reply.dupReplyDtoList}">
+                  <div class="col">
+                    <div class="comment">
+                      <div class="d-flex flex-low align-items-center">
+                        <strong th:text="${dupReply.writer}"></strong>
+                        <p class="small m-0 ml-2" style="color: gray;" th:text="${dupReply.updateTime}"></p>
+                        <div th:if="${#strings.equals(dupReply.memberEmail, userEmail)}">
+                          <a class="ml-2" th:data-id="${dupReply.id}" onclick="deleteDupReply(this)">삭제</a>
+                          <a class="ml-1 dupUSBtn" th:data-id="${dupReply.id}" onclick="updateDupReply(this)">수정</a>
+                          <a class="ml-1 dupUCBtn" style="display: none; color: red;" onclick="cancelDupReply(this)">취소</a>
+                        </div>
+                      </div>
+                      <p th:text="${dupReply.content}"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal fade">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">댓글 수정</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <input type="hidden" id="rid" name="replyId">
+                <textarea id="modalContent" class="form-control" rows="3"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+              <button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+              <button type="button" class="btn btn-primary" onclick="updateReply()">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</th:block>
+</html>
